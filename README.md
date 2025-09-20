@@ -64,7 +64,6 @@ The project's settings system (defined in `src/settings.py`) supports the follow
 - **`HUGGINGFACE_API_TOKEN`**: Your Hugging Face API token for accessing Mistral
 - **`OPENAI_API_KEY`**: Your OpenAI API key for LLM-as-a-Judge evaluation
 - **`DEVICE`** (Optional): Specify the device for model inference (e.g., "cuda", "cpu", "mps")
-- **`DOMAIN_COUNT`** (Optional): Number of domain name suggestions to generate (default: 5)
 
 #### Example .env file:
 ```bash
