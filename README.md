@@ -5,7 +5,7 @@ A fine-tuned LLM system for generating domain name suggestions with systematic e
 ## Project Overview
 
 This project implements a domain name suggestion system using:
-- **Fine-tuned open-source LLM** for domain generation - Mistral 7B-v0.1
+- **Fine-tuned open-source LLM** for domain generation - Mistral 7B-v0.3
 - **LLM-as-a-Judge evaluation** framework for systematic scoring using one of OpenAI's models.
 - **Iterative improvement** through edge case discovery and dataset augmentation
 - **Safety guardrails** for inappropriate content filtering
@@ -18,7 +18,7 @@ This project implements a domain name suggestion system using:
 - An OpenAI API key
 - A Hugging Face API key
 - CUDA-MPS compatible GPU (optional)
-- Access to Mistral 7B-v0.1 [Hugging Face Hub](https://huggingface.co/mistralai/Mistral-7B-v0.1)
+- Access to Mistral 7B-v0.3 [Hugging Face Hub](https://huggingface.co/mistralai/Mistral-7B-v0.3)
 
 >**Note for CUDA Users**: If you're using CUDA-enabled GPUs, you may need to install a specific version of PyTorch that's compatible with your CUDA version. Please visit the [PyTorch Get Started page](https://pytorch.org/get-started/locally/) to generate the correct installation command for your system.
 
