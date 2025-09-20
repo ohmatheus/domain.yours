@@ -1,5 +1,7 @@
 from pathlib import Path
-from pydantic import BaseSettings, SecretStr
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings
+
 from dotenv import load_dotenv
 
 ROOT_PATH = Path(__file__).parent.parent
