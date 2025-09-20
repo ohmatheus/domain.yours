@@ -13,6 +13,7 @@ class DomainSettings(BaseSettings):
     HUGGINGFACE_API_TOKEN: SecretStr | None = None
     OPENAI_API_KEY: SecretStr | None = None
     DEVICE: str = "cpu"
+    DOMAIN_COUNT: int = 5
 
     @property
     def huggingface_credentials(self) -> str:

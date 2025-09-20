@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 async def evaluate_domains(business_description: str, domains: list[str]) -> EvaluationResult:
+    assert len(domains) == config.DOMAIN_COUNT, f"Expected {config.DOMAIN_COUNT} domains, got {len(domains)}"
     client = AsyncOpenAI(api_key=config.openai_credentials)
     
     prompt = create_evaluation_prompt(business_description, domains)
