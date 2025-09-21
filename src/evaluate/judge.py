@@ -106,58 +106,59 @@ def create_evaluation_prompt(business_description: str, domains: list[str]) -> s
     domains_text = "\n".join([f"- {domain}" for domain in domains])
 
     prompt = f"""
-Please evaluate the following domain names for this business:
+    Please evaluate the following domain names for this business:
 
-BUSINESS DESCRIPTION: {business_description}
+    BUSINESS DESCRIPTION: {business_description}
 
-DOMAIN NAMES TO EVALUATE:
-{domains_text}
+    DOMAIN NAMES TO EVALUATE:
+    {domains_text}
 
-FIRST: Assess if the overall business description is appropriate (harmful, violent, sexual, weapons/guns, or any other illegal content).
+    FIRST: Assess if the overall business description is appropriate (harmful, violent, sexual, weapons/guns, or any other illegal content).
 
-SECOND: for each domain SCORING CRITERIA (Rate each domain on a scale of 0-5 for each criterion):
+    SECOND: for each domain SCORING CRITERIA (Rate each domain on a scale of 0-5 for each criterion):
 
-1. **Relevance (0-5)**: How well does the domain name match the business? Does it clearly relate to the industry, service, or purpose?
-   - 5: Perfect match, immediately obvious connection
-   - 4: Strong connection, very relevant
-   - 3: Moderate connection, somewhat relevant
-   - 2: Weak connection, marginally relevant
-   - 1: Very weak connection, barely relevant
-   - 0: No clear connection, irrelevant
+    1. **Relevance (0-5)**: How well does the domain name match the business? Does it clearly relate to the industry, service, or purpose?
+       - 5: Absolutely perfect match with crystal-clear industry connection and immediately recognizable purpose
+       - 4: Very strong connection with obvious industry relevance
+       - 3: Clear connection but may require some thought to understand
+       - 2: Weak connection, requires significant interpretation
+       - 1: Minimal connection, very unclear relevance
+       - 0: No discernible connection to the business
 
-2. **Creativity (0-5)**: Is the domain name memorable and unique? Does it stand out from competitors?
-   - 5: Highly creative, very memorable, unique approach
-   - 4: Creative and memorable
-   - 3: Moderately creative, somewhat memorable
-   - 2: Low creativity, generic feeling
-   - 1: Very low creativity, very generic
-   - 0: Not creative at all, completely generic
+    2. **Creativity (0-5)**: Is the domain name memorable and unique? Does it stand out from competitors?
+       - 5: Exceptionally creative, highly memorable, completely unique and innovative
+       - 4: Very creative with strong memorable qualities
+       - 3: Some creative elements but somewhat predictable
+       - 2: Limited creativity, fairly generic approach
+       - 1: Minimal creativity, very predictable
+       - 0: No creativity, completely generic or boring
 
-3. **Brandability (0-5)**: Does it sound like a real brand? Is it professional and trustworthy?
-   - 5: Excellent brand potential, very professional
-   - 4: Good brand potential, sounds professional
-   - 3: Moderate brand potential
-   - 2: Limited brand potential, questionable professionalism
-   - 1: Poor brand potential, unprofessional
-   - 0: No brand potential, completely unprofessional
+    3. **Brandability (0-5)**: Does it sound like a real brand? Is it professional and trustworthy?
+       - 5: Premium brand quality, sounds like a Fortune 500 company
+       - 4: Strong professional brand potential
+       - 3: Decent brand potential but may need work
+       - 2: Questionable brand appeal, amateur feel
+       - 1: Poor brand potential, unprofessional sound
+       - 0: No brand potential, sounds completely unprofessional
 
-4. **Conciseness (0-5)**: Is it short and easy to type? Is it memorable and not overly complex?
-   - 5: Very short and simple (≤8 characters)
-   - 4: Short and simple (9-12 characters)
-   - 3: Moderate length (13-16 characters)
-   - 2: Somewhat long (17-20 characters)
-   - 1: Long (21-25 characters)
-   - 0: Too long or complex (>25 characters)
+    4. **Conciseness (0-5)**: Is it short and easy to type? Is it memorable and not overly complex?
+       - 5: Exceptionally short and simple (≤6 characters), perfectly memorable
+       - 4: Short and simple (7-10 characters), very easy to remember
+       - 3: Moderate length (11-14 characters), reasonably memorable
+       - 2: Getting long (15-18 characters), harder to remember
+       - 1: Long (19-22 characters), difficult to type/remember
+       - 0: Too long or complex (>22 characters), impractical
 
-5. **Category**: Assign one category for domain based on overall assessment:
-   - "good": High-quality domain with strong scores across criteria (mostly 4-5 scores)
-   - "ok": Decent domain with acceptable scores (mostly 2-3 scores)
-   - "random_word": Domain appears to be random words without clear connection to business
-   - "too_long": Domain is excessively long or complex (>20 characters typically)
-   - "other_failure": Domain has other significant issues not covered by above categories
-   - "inappropriate": Domain contain harmful, violent, sexual, weapons/guns, or any other illegal content.
+    5. **Category**: Assign one category for domain based on overall assessment:
+       - "good": Exceptional domain with outstanding scores across most criteria (mostly 4-5 scores)
+       - "ok": Acceptable domain with decent scores but room for improvement (mostly 2-3 scores)
+       - "random_word": Domain appears to be random words without clear connection to business
+       - "too_long": Domain is excessively long or complex (>18 characters typically)
+       - "other_failure": Domain has other significant issues not covered by above categories
+       - "inappropriate": Domain contain harmful, violent, sexual, weapons/guns, or any other illegal content.
 
-Evaluate each domain thoroughly and return the results in the required JSON format.
-"""
+    Be critical and demanding in your evaluation. Most domains should receive lower scores unless they truly excel in each category. Evaluate each domain thoroughly and return the results in the required JSON format.
+    """
 
     return prompt
+
