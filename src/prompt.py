@@ -1,3 +1,3 @@
-DOMAIN_GENERATION_PROMPT = """Generate 5 creative domain name(s) (without TLD extensions like .com) for the following business description:
+DOMAIN_GENERATION_PROMPT: str = """Generate 5 creative domain name(s) (without TLD extensions like .com) for the following business description:
 
 {description}"""

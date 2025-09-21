@@ -71,3 +71,61 @@ HUGGINGFACE_API_TOKEN=your_hf_token_here
 OPENAI_API_KEY=your_openai_api_key_here
 DEVICE=cuda
 ```
+
+## Training
+
+The project includes a command-line training system that allows you to train domain generation models on different dataset versions.
+
+### Training Scripts
+
+- **`src/main.py`**: Main command-line interface for training operations
+- **`src/train.py`**: Core training functionality with dataset validation and model configuration
+
+### Training Commands
+
+#### Train a Specific Version
+Train a model on a specific dataset version (e.g., v1, v2, v3):
+
+```bash
+python src/main.py train --version v1
+```
+
+```bash
+python src/main.py train --version v2
+```
+
+#### Train All Available Versions
+Train models on all available dataset versions automatically:
+
+```bash
+python src/main.py train --version all
+```
+
+#### Advanced Options
+Stop training all versions if one fails (when using `--version all`):
+
+```bash
+python src/main.py train --version all --stop-on-error
+```
+
+### Dataset Requirements
+
+The training system expects dataset files to follow this naming convention:
+- `data/dataset_v1.csv`
+- `data/dataset_v2.csv`
+- `data/dataset_v3.csv`
+- etc.
+
+Each dataset file must contain:
+- `description`: Business description column
+- `suggestions`: JSON array of 5 domain suggestions (or empty array)
+
+### Training Configuration
+
+The training uses the following configuration:
+- **Model**: Mistral-7B-Instruct-v0.3
+- **Fine-tuning**: LoRA (Low-Rank Adaptation)
+- **Training Framework**: SFT (Supervised Fine-Tuning) with TRL
+- **Validation Split**: 10% of training data
+- **Early Stopping**: Enabled with patience of 2 epochs
+- **Output**: Models saved to `models/model_{version}/`

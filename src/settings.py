@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 from dotenv import load_dotenv
 
-ROOT_PATH = Path(__file__).parent.parent
+ROOT_PATH: Path = Path(__file__).parent.parent
 
 load_dotenv()
 
@@ -27,4 +27,4 @@ class DomainSettings(BaseSettings):
         return self.OPENAI_API_KEY.get_secret_value()
 
 
-config = DomainSettings()
+config: DomainSettings = DomainSettings()
