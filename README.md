@@ -1,4 +1,4 @@
-# Domain Name Generator - ML Interview Project
+# Domain Name Generator
 
 A fine-tuned LLM system for generating domain name suggestions with systematic evaluation, edge case discovery, and iterative improvement.
 
