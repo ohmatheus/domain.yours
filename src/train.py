@@ -7,7 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, EarlyStoppingCallb
 from trl import SFTTrainer, SFTConfig
 from peft import LoraConfig
 from datasets import Dataset
-from prompt import DOMAIN_GENERATION_PROMPT
+from .prompt import DOMAIN_GENERATION_PROMPT
 
 
 def train_model(version: str) -> None:
@@ -44,7 +44,7 @@ def train_model(version: str) -> None:
     
     model = AutoModelForCausalLM.from_pretrained(
         "mistralai/Mistral-7B-Instruct-v0.3",
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True
     )

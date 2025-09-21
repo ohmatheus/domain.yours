@@ -7,7 +7,8 @@ import glob
 from typing import List
 from tqdm import tqdm
 
-from train import train_model, test_model
+from src.train import train_model, test_model
+from src.model_eval import run_evaluation
 
 
 def get_available_versions() -> List[str]:
@@ -18,6 +19,18 @@ def get_available_versions() -> List[str]:
         if filename.startswith('dataset_') and filename.endswith('.csv'):
             version = filename[8:-4]
             versions.append(version)
+    return sorted(versions)
+
+
+def get_available_model_versions() -> List[str]:
+    model_dirs = glob.glob('models/model_*')
+    versions: List[str] = []
+    for model_dir in model_dirs:
+        dirname = os.path.basename(model_dir)
+        if dirname.startswith('model_'):
+            version = dirname[6:]
+            if os.path.exists(os.path.join(model_dir, 'adapter_model.safetensors')):
+                versions.append(version)
     return sorted(versions)
 
 
@@ -57,6 +70,42 @@ def train_command(args: argparse.Namespace) -> None:
             sys.exit(1)
 
 
+def evaluate_command(args: argparse.Namespace) -> None:
+    if not os.path.exists('data/test_set.csv'):
+        logging.error("Test set not found at data/test_set.csv")
+        sys.exit(1)
+    
+    version: str = args.version
+    
+    if version == 'all':
+        available_models: List[str] = get_available_model_versions()
+        
+        if not available_models:
+            logging.error("No trained models found in models/ directory")
+            sys.exit(1)
+        
+        for v in tqdm(available_models, desc="Evaluating models"):
+            try:
+                run_evaluation(v)
+            except Exception as e:
+                logging.error(f"Failed to evaluate model {v}: {e}")
+                if args.stop_on_error:
+                    sys.exit(1)
+                continue
+    else:
+        model_path: str = f'models/model_{version}'
+        if not os.path.exists(model_path) or not os.path.exists(os.path.join(model_path, 'config.json')):
+            available: List[str] = get_available_model_versions()
+            logging.error(f"Invalid version '{version}' - model not found. Available: {', '.join(available) if available else 'none'}")
+            sys.exit(1)
+        
+        try:
+            run_evaluation(version)
+        except Exception as e:
+            logging.error(f"Evaluation failed for model {version}: {e}")
+            sys.exit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -77,10 +126,25 @@ def main() -> None:
         help='Stop training all versions if one fails (only applies when --version=all)'
     )
     
+    # Eval command
+    eval_parser = subparsers.add_parser('eval', help='Evaluate model(s)')
+    eval_parser.add_argument(
+        '--version', 
+        default='all',
+        help='Model version to evaluate (v1, v2, v3, etc.) or "all" to evaluate all available models'
+    )
+    eval_parser.add_argument(
+        '--stop-on-error',
+        action='store_true',
+        help='Stop evaluating all models if one fails (only applies when --version=all)'
+    )
+    
     args = parser.parse_args()
     
     if args.command == 'train':
         train_command(args)
+    elif args.command == 'eval':
+        evaluate_command(args)
     else:
         parser.print_help()
         sys.exit(1)

@@ -87,25 +87,25 @@ The project includes a command-line training system that allows you to train dom
 Train a model on a specific dataset version (e.g., v1, v2, v3):
 
 ```bash
-python src/main.py train --version v1
+python main.py train --version v1
 ```
 
 ```bash
-python src/main.py train --version v2
+python main.py train --version v2
 ```
 
 #### Train All Available Versions
 Train models on all available dataset versions automatically:
 
 ```bash
-python src/main.py train --version all
+python main.py train --version all
 ```
 
 #### Advanced Options
 Stop training all versions if one fails (when using `--version all`):
 
 ```bash
-python src/main.py train --version all --stop-on-error
+python main.py train --version all --stop-on-error
 ```
 
 ### Dataset Requirements
@@ -129,3 +129,70 @@ The training uses the following configuration:
 - **Validation Split**: 10% of training data
 - **Early Stopping**: Enabled with patience of 2 epochs
 - **Output**: Models saved to `models/model_{version}/`
+
+## Evaluation
+
+The project includes a command-line evaluation system that allows you to evaluate trained models against a test dataset using the LLM-as-a-Judge framework.
+
+### Evaluation Scripts
+
+- **`src/main.py`**: Main command-line interface for evaluation operations
+- **`src/model_eval.py`**: Core evaluation functionality with domain generation and scoring
+
+### Evaluation Commands
+
+#### Evaluate a Specific Model Version
+Evaluate a trained model on a specific version (e.g., v1, v2, v3):
+
+```bash
+python main.py eval --version v1
+```
+
+```bash
+python main.py eval --version v2
+```
+
+#### Evaluate All Available Models
+Evaluate all available trained models automatically:
+
+```bash
+python main.py eval --version all
+```
+
+#### Advanced Options
+Stop evaluating all models if one fails (when using `--version all`):
+
+```bash
+python main.py eval --version all --stop-on-error
+```
+
+### Evaluation Requirements
+
+The evaluation system expects:
+- **Trained models**: Located in `models/model_{version}/` directories with valid config.json files
+- **Test dataset**: `data/test_set.csv` file with business descriptions
+- **Environment variables**: OpenAI API key for LLM-as-a-Judge evaluation (see Setup Instructions)
+
+### Evaluation Process
+
+1. **Model Loading**: Loads the trained LoRA adapter and merges it with the base Mistral model
+2. **Domain Generation**: Generates domain suggestions for each test case
+3. **LLM Evaluation**: Uses GPT-4 to score each generated domain on multiple criteria
+4. **Results Export**: Saves detailed evaluation results to `data/model_{version}-results.csv`
+
+### Evaluation Output
+
+The evaluation results include:
+- **Domain-level scores**: Relevance, creativity, brandability, and conciseness (1-5 scale)
+- **Category counts**: Good, OK, random words, too long, failures, and inappropriate domains
+- **Overall metrics**: Average scores and appropriateness classification
+- **Detailed CSV**: Complete results saved for further analysis
+
+## Analysis and Model Improvement
+
+The project includes comprehensive analysis notebooks that demonstrate the iterative improvement process:
+
+### Analysis Notebooks
+
+- **`notebooks/analyse_v1.ipynb`**: Detailed analysis of model v1 performance
+- **`notebooks/analyse_v2.ipynb`**: Comparative analysis of model v2 improvements
