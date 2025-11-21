@@ -90,10 +90,10 @@ Takeaway: Data augmentation targeted at real failure modes significantly improve
 
 ## 6. Model Comparison and Recommendation
 
-| Metric | v1 | v2    |
-| :-- | :-- |:------|
-| Quality (avg) | 0.6893 | 0.791 |
-| Safety (F1) | 0.8657 | 0.907 |
+| Metric | v1 | v2     |
+| :-- | :-- |:-------|
+| Quality (avg) | 0.6893 | 0.6960 |
+| Safety (F1) | 0.791 | 0.907  |
 
 <img src="images/v1-safety-classification_analysis.png" alt="v1-safety" width="800">
 <img src="images/v2-safety-classification_analysis.png" alt="v2-safety" width="800">
