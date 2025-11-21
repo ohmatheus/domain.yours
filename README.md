@@ -1,198 +1,207 @@
 # Domain Name Generator
 
-A fine-tuned LLM system for generating domain name suggestions with systematic evaluation, edge case discovery, and iterative improvement.
+A fine-tuned LLM system that generates domain name suggestions and evaluates them with an LLM-as-a-Judge. Run instructions at the end.
 
-## Project Overview
+## 1. Methodology and Setup Overview
 
-This project implements a domain name suggestion system using:
-- **Fine-tuned open-source LLM** for domain generation - Mistral 7B-v0.3
-- **LLM-as-a-Judge evaluation** framework for systematic scoring using one of OpenAI's models.
-- **Iterative improvement** through edge case discovery and dataset augmentation
-- **Safety guardrails** for inappropriate content filtering
+- Model family: Mistral 7B v0.3 (Instruct)
+- Fine-tuning strategy: LoRA adapters using Hugging Face TRL, SFT (Supervised Fine-Tuning)
+- Early stopping: patience = 2
+- Evaluation: LLM-as-a-Judge (an OpenAI model) for quality and safety scoring
+- Devices: CUDA or Apple Metal (MPS) supported; CPU fallback
 
-## Setup Instructions
+Why Mistral 7B? Compact enough to run locally while being strong for instruction-following. LoRA enables fast, low-cost adapters with small on-disk footprint and quick iteration.
+
+## 2. Dataset Design and Generation
+
+Two data splits power the iteration loop:
+
+- Training datasets: `data/dataset_v{n}.csv`
+- Held-out test set: `data/test_set.csv`
+
+Each dataset has two columns:
+- `description`: one- or multi-sentence business description
+- `suggestions`: a JSON array of exactly 5 single-token strings or `[]` for refusal rows
+
+Generation approach:
+- The initial dataset (v1) was produced via a prompt to generate around 100 rows, including about 10 explicit refusals (`[]`).
+- Certain topics were intentionally omitted from v1 (e.g., birds, water play, hunting) so the test set could stress these blind spots.
+- The test set contains 24–30 rows, including requested omissions, several specific constraints (e.g., “avoid hyphens”, “prefer number-based naming”), ultra-long descriptions, and 4–6 refusal rows.
+
+Formatting constraints for suggestions:
+- No TLDs (e.g., no `.com`)
+- Allowed characters: lowercase a–z, digits 0–9, and hyphen `-`
+- Length: 5–50 characters
+- Unique, pronounceable, and brandable; avoid trademarks and real company names
+
+Implementation notes:
+- TLDs and JSON-typed outputs were removed from training targets to avoid unnecessary complexity during SFT and to improve convergence.
+
+## 3. Evaluation Framework (Quality and Safety)
+
+We assess both the quality of domain suggestions and safety behavior.
+
+Quality (LLM-as-a-Judge):
+- Each generated domain is scored on relevance, creativity, brandability, and conciseness (1–5).
+- Low-scoring outputs are assigned categories (e.g., random words, too long), enabling aggregate analysis and targeted fixes.
+
+Safety classification and metrics:
+- The judge also labels each input description as appropriate or inappropriate.
+- Model behavior is compared against this ground truth, and we compute precision/recall/F1 for blocking inappropriate content.
+- Confusion-matrix terms:
+  - TP (`ok`): safe content correctly allowed
+  - TN (`confirmed_inappropriate`): harmful content correctly blocked
+  - FP (`false_positive_inappropriate`): safe content wrongly blocked
+  - FN (`missed_inappropriate`): harmful content wrongly allowed
+
+Artifacts:
+- Detailed CSV evaluations per model version: `data/model_{version}-results.csv`
+- Example visuals: category distribution and safety analysis plots
+  - images/domain_category_count.png
+  - images/v2-safety-classification_analysis.png
+
+## 4. Edge Case Discovery
+
+How we surface weaknesses:
+- Filter to valid outputs (exclude FP and FN safety cases) and compute a normalized mean quality score per row in [0, 1].
+- Rank from lowest to highest; study the bottom cases to understand failure patterns.
+- Count categories (good/ok/random/too long/other) to identify systemic issues.
+
+Observed edge cases:
+- “Missing children” combined with adult or harmful themes (gambling, alcohol, tobacco)
+- False positives that block legitimate legal services
+- Some domain-specific creativity gaps
+
+## 5. Iterative Improvement (v1 → v2)
+
+Strategy:
+- Use insights from low-quality and unsafe cases to prompt-generate additional data focusing on identified gaps.
+- Augment v1 with targeted new rows and refusals, then fine-tune a new LoRA adapter (v2) using the same hyperparameters.
+
+Measured changes on the same test set:
+- Fewer “random word” domains (v2 vs v1)
+- Quality: +0.0067 absolute (+0.97% relative)
+- Safety (F1): +0.0718 absolute (+8.29% relative)
+- Total error rate (FP + FN): reduced from 20.9% (v1) to 9.3% (v2)
+  - Absolute change: −11.6%
+  - Relative reduction: −55.5%
+
+Takeaway: Data augmentation targeted at real failure modes significantly improved safety with a modest lift in quality.
+
+## 6. Model Comparison and Recommendation
+
+| Metric | v1 | v2 |
+| :-- | :-- | :-- |
+| Quality (avg) | 0.6893 | 0.6960 |
+| Safety (F1) | 0.8657 | 0.9375 |
+
+<img src="images/v1-safety-classification_analysis.png" alt="v1-safety" width="800">
+<img src="images/v2-safety-classification_analysis.png" alt="v2-safety" width="800">
+
+Recommendation: Deploy v2. While quality gains are small, the safety improvement is substantial and important for this task.
+
+## 7. Future Work
+
+- Expose token logprobs to quantify model confidence per suggestion; include in scoring and UI.
+- Capture and visualize training metrics (loss/val curves, LR schedules); integrate MLFlow/W&B.
+- Provide a simple API service with runtime guardrails (e.g., a lightweight safety checker before returning results).
+- Add Docker/Compose for reproducible environments.
+- Hyperparameter tuning with Optuna (LoRA rank/alpha, LR, scheduler, batch sizes).
+- Weight FN higher than FP in the safety metric if product risk demands it.
+- Explore alternative `save_strategy`/`eval_strategy` beyond `epoch` to capture better checkpoints.
+- Investigate loss alternatives to pure token cross-entropy for list-like outputs (e.g., semantic similarity–aware objectives).
+
+## 8. Project Structure and Key Files
+
+- Root CLI: `main.py` (training and evaluation entrypoint)
+- Training: `src/train.py`
+- Evaluation: `src/model_eval.py`
+- Data: `data/dataset_v*.csv`, `data/test_set.csv`, `data/model_*-results.csv`
+- Notebooks: `notebooks/analyse_v1.ipynb`, `notebooks/analyse_v2.ipynb`, `notebooks/train.ipynb`, `notebooks/evaluate.ipynb`
+- Images: `images/`
+- Models: `models/model_{version}/` (created after training)
+
+## 9. How to Run (setup and commands)
 
 ### Prerequisites
-- Python 3.13.5 or higher
+- Python 3.10+ (tested on recent versions)
 - Git
-- An OpenAI API key
-- A Hugging Face API key
-- CUDA-MPS compatible GPU (optional)
-- Access to Mistral 7B-v0.3 [Hugging Face Hub](https://huggingface.co/mistralai/Mistral-7B-v0.3)
+- OpenAI API key (for evaluation)
+- Hugging Face access token (for base model and/or gated weights)
+- Optional GPU with CUDA or Apple MPS
 
->**Note for CUDA Users**: If you're using CUDA-enabled GPUs, you may need to install a specific version of PyTorch that's compatible with your CUDA version. Please visit the [PyTorch Get Started page](https://pytorch.org/get-started/locally/) to generate the correct installation command for your system.
+Note for CUDA users: Ensure your PyTorch build matches your CUDA version. Use the PyTorch selector: https://pytorch.org/get-started/locally/
 
-
-### 1. Clone and Navigate to Repository
+### 1) Clone and enter the repo
 ```bash
 git clone https://github.com/ohmatheus/domain.yours.git
 cd domain.yours
 ```
 
-### 2. Create Virtual Environment
+### 2) Create and activate a virtual environment
 ```bash
-# Create virtual environment
 python -m venv venv
-
-# Activate virtual environment
-# On macOS/Linux:
+# macOS/Linux
 source venv/bin/activate
-# On Windows:
+# Windows
 venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+### 3) Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Set up Environment Variables
-The project uses environment variables for API credentials and configuration. Set up your environment by copying the example file:
-
+### 4) Configure environment variables
+Copy and edit the example:
 ```bash
-# Copy the example environment file
 cp .env_example .env
-
-# Edit .env with your actual credentials
-# The .env file is already in .gitignore and won't be tracked
 ```
+Required variables (see `src/settings.py`):
+- `HUGGINGFACE_API_TOKEN`
+- `OPENAI_API_KEY`
+- `DEVICE` (optional: `cuda`, `mps`, or `cpu`)
 
-#### Required Environment Variables
-
-The project's settings system (defined in `src/settings.py`) supports the following variables:
-
-- **`HUGGINGFACE_API_TOKEN`**: Your Hugging Face API token for accessing Mistral
-- **`OPENAI_API_KEY`**: Your OpenAI API key for LLM-as-a-Judge evaluation
-- **`DEVICE`** (Optional): Specify the device for model inference (e.g., "cuda", "cpu", "mps")
-
-#### Example .env file:
+Example `.env`:
 ```bash
 HUGGINGFACE_API_TOKEN=your_hf_token_here
 OPENAI_API_KEY=your_openai_api_key_here
 DEVICE=cuda
 ```
 
-## Training
-
-The project includes a command-line training system that allows you to train domain generation models on different dataset versions.
-
-### Training Scripts
-
-- **`src/main.py`**: Main command-line interface for training operations
-- **`src/train.py`**: Core training functionality with dataset validation and model configuration
-
-### Training Commands
-
-#### Train a Specific Version
-Train a model on a specific dataset version (e.g., v1, v2, v3):
-
+### 5) Train
+- Train a specific version:
 ```bash
 python main.py train --version v1
-```
-
-```bash
 python main.py train --version v2
 ```
-
-#### Train All Available Versions
-Train models on all available dataset versions automatically:
-
+- Train all detected versions:
 ```bash
 python main.py train --version all
 ```
-
-#### Advanced Options
-Stop training all versions if one fails (when using `--version all`):
-
+- Stop-on-error (when using `all`):
 ```bash
 python main.py train --version all --stop-on-error
 ```
 
-### Dataset Requirements
+Datasets must follow: `data/dataset_v1.csv`, `data/dataset_v2.csv`, ... with columns `description` and `suggestions`.
 
-The training system expects dataset files to follow this naming convention:
-- `data/dataset_v1.csv`
-- `data/dataset_v2.csv`
-- `data/dataset_v3.csv`
-- etc.
-
-Each dataset file must contain:
-- `description`: Business description column
-- `suggestions`: JSON array of 5 domain suggestions (or empty array)
-
-### Training Configuration
-
-The training uses the following configuration:
-- **Model**: Mistral-7B-Instruct-v0.3
-- **Fine-tuning**: LoRA (Low-Rank Adaptation)
-- **Training Framework**: SFT (Supervised Fine-Tuning) with TRL
-- **Validation Split**: 10% of training data
-- **Early Stopping**: Enabled with patience of 2 epochs
-- **Output**: Models saved to `models/model_{version}/`
-
-## Evaluation
-
-The project includes a command-line evaluation system that allows you to evaluate trained models against a test dataset using the LLM-as-a-Judge framework.
-
-### Evaluation Scripts
-
-- **`src/main.py`**: Main command-line interface for evaluation operations
-- **`src/model_eval.py`**: Core evaluation functionality with domain generation and scoring
-
-### Evaluation Commands
-
-#### Evaluate a Specific Model Version
-Evaluate a trained model on a specific version (e.g., v1, v2, v3):
-
+### 6) Evaluate
+- Evaluate a specific trained model version:
 ```bash
 python main.py eval --version v1
-```
-
-```bash
 python main.py eval --version v2
 ```
-
-#### Evaluate All Available Models
-Evaluate all available trained models automatically:
-
+- Evaluate all trained models:
 ```bash
 python main.py eval --version all
 ```
-
-#### Advanced Options
-Stop evaluating all models if one fails (when using `--version all`):
-
+- Stop-on-error (when using `all`):
 ```bash
 python main.py eval --version all --stop-on-error
 ```
 
-### Evaluation Requirements
-
-The evaluation system expects:
-- **Trained models**: Located in `models/model_{version}/` directories with valid config.json files
-- **Test dataset**: `data/test_set.csv` file with business descriptions
-- **Environment variables**: OpenAI API key for LLM-as-a-Judge evaluation (see Setup Instructions)
-
-### Evaluation Process
-
-1. **Model Loading**: Loads the trained LoRA adapter and merges it with the base Mistral model
-2. **Domain Generation**: Generates domain suggestions for each test case
-3. **LLM Evaluation**: Uses GPT-4 to score each generated domain on multiple criteria
-4. **Results Export**: Saves detailed evaluation results to `data/model_{version}-results.csv`
-
-### Evaluation Output
-
-The evaluation results include:
-- **Domain-level scores**: Relevance, creativity, brandability, and conciseness (1-5 scale)
-- **Category counts**: Good, OK, random words, too long, failures, and inappropriate domains
-- **Overall metrics**: Average scores and appropriateness classification
-- **Detailed CSV**: Complete results saved for further analysis
-
-## Analysis and Model Improvement
-
-The project includes comprehensive analysis notebooks that demonstrate the iterative improvement process:
-
-### Analysis Notebooks
-
-- **`notebooks/analyse_v1.ipynb`**: Detailed analysis of model v1 performance
-- **`notebooks/analyse_v2.ipynb`**: Comparative analysis of model v2 improvements
+Requirements for evaluation:
+- Trained models in `models/model_{version}/`
+- Test set at `data/test_set.csv`
+- Valid OpenAI API key in the environment
